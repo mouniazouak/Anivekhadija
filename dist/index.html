@@ -107,7 +107,7 @@ Aujourd’hui, je voulais t’offrir quelque chose qui nous ressemble : un peu d
 
 Merci pour ta présence, pour les moments simples qui deviennent des souvenirs précieux, et pour cette place unique que tu as dans ma vie.
 
-Tu peux personnaliser cette lettre ici quand tu veux :</p><textarea id="letterText">Ma Khadija,
+</p><textarea id="letterText">Ma Khadija,
 
 Il y a des personnes qui entrent dans notre vie doucement, presque sans prévenir, puis qui finissent par y prendre une place impossible à remplacer. Pour moi, tu es cette personne.
 
@@ -153,13 +153,92 @@ Et peu importe ce que l’avenir nous réserve, je serai toujours heureuse de po
     function renderProgress(){ $('#progress').innerHTML=levels.map((_,i)=>`<i class="${i<state.level?'done':i===state.level?'current':''}"></i>`).join('') }
     function setupArena(){const arena=$('#arena'), player=$('#player'), goal=$('#goal'); state.x=9;state.y=75;state.answered=false;state.transitioning=false; player.style.left=state.x+'%';player.style.top=state.y+'%'; goal.style.right='8%';goal.style.top=(12+state.level*14)+'%'; arena.querySelectorAll('.obstacle,.star').forEach(e=>e.remove()); for(let i=0;i<7;i++){let o=document.createElement('div');o.className='obstacle';o.textContent=['📦','🪐','🎈','🧸'][i%4];o.style.left=(22+(i*13)%60)+'%';o.style.top=(18+(i*23)%64)+'%';arena.appendChild(o)} for(let i=0;i<20;i++){let s=document.createElement('div');s.className='star';s.style.left=Math.random()*97+'%';s.style.top=Math.random()*90+'%';arena.appendChild(s)} }
     function renderLevel(){const l=levels[state.level];$('#levelNum').textContent=state.level+1;$('#levelTitle').textContent=l.title;$('#questionTitle').textContent='Question de mission';$('#questionText').textContent=l.q;$('#answers').innerHTML=l.a.map((a,i)=>`<button class="answer" data-i="${i}"><span class="key">${String.fromCharCode(65+i)}</span>${a}</button>`).join('');$('#letters').textContent=state.letters.length?state.letters.join(' · '):'—';$$('.answer').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.i)));renderProgress();setupArena()}
-    function move(dir){if(!$('#game').classList.contains('active')||state.transitioning)return;const step=6;if(dir==='left')state.x=Math.max(4,state.x-step);if(dir==='right')state.x=Math.min(88,state.x+step);if(dir==='up')state.y=Math.max(5,state.y-step);if(dir==='down')state.y=Math.min(84,state.y+step);$('#player').style.left=state.x+'%';$('#player').style.top=state.y+'%'; if(state.x>77){ if(!state.answered){toast('Réponds d’abord à la question ✦');state.x=70;$('#player').style.left=state.x+'%'} else {state.transitioning=true;toast('Coffre atteint !');setTimeout(nextLevel,450)}}}
+    function move(dir){
+      if(!$('#game').classList.contains('active')||state.transitioning)return;
+      const arena=$('#arena'),player=$('#player'),goal=$('#goal');
+      const width=arena.clientWidth,height=arena.clientHeight;
+      const overlaps=(x,y,box)=>x<box.offsetLeft+box.offsetWidth&&x+player.offsetWidth>box.offsetLeft&&y<box.offsetTop+box.offsetHeight&&y+player.offsetHeight>box.offsetTop;
+      const obstacles=[...arena.querySelectorAll('.obstacle')];
+      const dx=dir==='right'?1:dir==='left'?-1:0;
+      const dy=dir==='down'?1:dir==='up'?-1:0;
+      let x=state.x*width/100,y=state.y*height/100;
+      const distance=(dx?width:height)*.06;
+      let blocked=false;
+      // Check every pixel along the path so rapid presses cannot cross a wall.
+      for(let travelled=0;travelled<distance;travelled++){
+        const step=Math.min(1,distance-travelled);
+        const nx=Math.max(0,Math.min(width-player.offsetWidth,x+dx*step));
+        const ny=Math.max(0,Math.min(height-player.offsetHeight,y+dy*step));
+        if(obstacles.some(box=>overlaps(nx,ny,box))){blocked=true;break;}
+        if(!state.answered&&overlaps(nx,ny,goal)){toast('Réponds d’abord à la question ✦');break;}
+        x=nx;y=ny;
+      }
+      state.x=x/width*100;state.y=y/height*100;
+      player.style.transition='none';
+      player.style.left=state.x+'%';player.style.top=state.y+'%';
+      if(blocked)toast('Un obstacle ! Contourne-le ✦');
+      if(state.answered&&overlaps(x,y,goal)){
+        state.transitioning=true;toast('Coffre atteint !');setTimeout(nextLevel,450);
+      }
+    }
     function answer(i){if(state.answered)return;const l=levels[state.level],b=$(`[data-i="${i}"]`);if(i===l.correct){b.classList.add('correct');state.answered=true;state.letters.push(l.letter);save();$('#letters').textContent=state.letters.join(' · ');toast('Bonne réponse ! Le coffre est activé ✦')}else{b.classList.add('wrong');toast('Presque… essaie encore 💫');setTimeout(()=>b.classList.remove('wrong'),700)}}
     function nextLevel(){if(!state.transitioning)return;if(state.level<4){const memory=levels[state.level];$('#interludeTitle').textContent=memory.memoryTitle||memory.photo;$('#interludeText').textContent=memory.photo;state.level++;save();show('interlude')}else{const memory=levels[4];finalMemory=true;state.transitioning=false;$('#interludeTitle').textContent=memory.memoryTitle||memory.photo;$('#interludeText').textContent=memory.photo;show('interlude')}}
     function renderCode(){$('#codeInputs').innerHTML='<input class="code-input" id="codeInput" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="_ _ _ _ _" aria-label="Écrire le code du coffre">';setTimeout(()=>$('#codeInput').focus(),120)}
     function confetti(){for(let i=0;i<80;i++){let s=document.createElement('i');s.className='spark';s.style.left=Math.random()*100+'vw';s.style.background=['#ff5ca8','#5cf3ce','#ffd66b','#9b7bff'][i%4];s.style.transform=`rotate(${Math.random()*360}deg)`;s.style.animationDelay=Math.random()*.7+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),2600)}}
     $('#startBtn').onclick=()=>show('levels');$('#enterGameBtn').onclick=()=>{state.level=0;state.letters=[];finalMemory=false;state.transitioning=false;save();renderLevel();show('game')};$('#continueBtn').onclick=()=>{if(finalMemory){finalMemory=false;show('final');renderCode()}else{renderLevel();show('game')}};$('#unlockBtn').onclick=()=>{const code=($('#codeInput')?.value||'').trim().toUpperCase();if(code==='GAIZI'){confetti();show('bug')}else toast('Ce n’est pas encore le bon code… essaie GAIZI 💫')};$('#fixBtn').onclick=()=>{confetti();show('surprise')};$('#letterBtn').onclick=()=>show('letter');$('#diplomaBtn').onclick=()=>{localStorage.setItem('gaizi-letter-v2',$('#letterText').value);show('diploma')};$('#homeBtn').onclick=()=>show('home');$('#resetBtn').onclick=()=>{localStorage.removeItem('gaizi-progress');state={level:0,letters:[],sound:true,x:9,y:75,answered:false,transitioning:false};finalMemory=false;show('home');toast('Nouvelle mission prête ✦')};$('#soundBtn').onclick=()=>{state.sound=!state.sound;$('#soundBtn').textContent=state.sound?'🔊 son activé':'🔇 son coupé';toast(state.sound?'Les bruitages sont activés':'Les bruitages sont coupés')};
     $('#giftBtn').onclick=()=>show('gift');
+    const downloadCertificate=document.createElement('button');
+    downloadCertificate.type='button';
+    downloadCertificate.className='cta';
+    downloadCertificate.textContent='Télécharger le certificat';
+    downloadCertificate.style.marginRight='12px';
+    $('#giftBtn').before(downloadCertificate);
+    downloadCertificate.onclick=()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=2400;canvas.height=1600;
+      const ctx=canvas.getContext('2d');
+      if(!ctx){toast('Le téléchargement est indisponible sur ce navigateur.');return;}
+      ctx.fillStyle='#fffdf9';ctx.fillRect(0,0,2400,1600);
+      ctx.strokeStyle='#b99bc9';ctx.lineWidth=3;ctx.strokeRect(22,22,2356,1556);
+      ctx.strokeStyle='#cdb5d9';ctx.strokeRect(44,44,2312,1512);
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.beginPath();ctx.arc(1200,260,100,0,Math.PI*2);
+      ctx.fillStyle='#f7f0f9';ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.arc(1200,260,118,0,Math.PI*2);
+      ctx.strokeStyle='#d3b97b';ctx.stroke();
+      ctx.font='80px "Segoe UI Emoji", sans-serif';ctx.fillText('🏆',1200,260);
+      const text=(value,y,font,color,maxWidth=2040)=>{
+        ctx.font=font;ctx.fillStyle=color;
+        const words=value.trim().split(/\s+/);let line='';
+        const lines=[];
+        for(const word of words){
+          const next=line?line+' '+word:word;
+          if(line&&ctx.measureText(next).width>maxWidth){lines.push(line);line=word;}else line=next;
+        }
+        if(line)lines.push(line);
+        const lineHeight=parseFloat(font.match(/(\d+)px/)[1])*1.5;
+        for(const [i,line] of lines.entries())ctx.fillText(line,1200,y+i*lineHeight);
+        return y+lines.length*lineHeight;
+      };
+      const diploma=$('#diploma .diploma');
+      text(diploma.querySelector('.eyebrow').textContent.toUpperCase(),430,'26px Georgia','#9873a2');
+      text(diploma.querySelector('h2').textContent,610,'116px Georgia','#4b3159');
+      ctx.strokeStyle='#d3b97b';ctx.lineWidth=2;
+      for(const y of [760,900]){ctx.beginPath();ctx.moveTo(430,y);ctx.lineTo(1970,y);ctx.stroke();}
+      text(diploma.querySelector('h3').textContent,830,'italic 48px Georgia','#8b5aa8');
+      let y=1040;
+      for(const paragraph of diploma.querySelectorAll('p')){
+        y=text(paragraph.textContent,y,'40px Georgia','#6e5a73')+55;
+      }
+      canvas.toBlob(blob=>{
+        if(!blob){toast('Impossible de créer le certificat. Réessaie.');return;}
+        const url=URL.createObjectURL(blob),link=document.createElement('a');
+        link.href=url;link.download='Certificat-pour-Khadija.png';
+        document.body.appendChild(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),60000);
+        toast('Le certificat est prêt à être enregistré 💜');
+      },'image/png');
+    };
     $$('[data-move]').forEach(b=>{b.addEventListener('click',()=>move(b.dataset.move));b.addEventListener('touchstart',e=>{e.preventDefault();move(b.dataset.move)},{passive:false})});document.addEventListener('keydown',e=>{const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right','w':'up','s':'down','a':'left','d':'right'};if(map[e.key]){e.preventDefault();move(map[e.key])}});
     const savedLetter=localStorage.getItem('gaizi-letter-v2');if(savedLetter)$('#letterText').value=savedLetter;
   </script>

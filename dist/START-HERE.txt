@@ -1,0 +1,18 @@
+HOW TO OPEN
+Double-click index.html in this folder. Keep the assets folder beside it.
+No installation, account, or internet connection is needed.
+
+HOW TO PLAY
+1. Click Decouvrir la surprise, then Commencer nos souvenirs.
+2. Answer each question, then use the arrow keys or on-screen arrows to move right toward the chest.
+3. Read each memory and click Continuer la mission.
+4. After five levels, enter the five collected letters and click the chest to open it.
+5. The ERREUR 404 screen is part of the surprise. Click Lancer la correction.
+6. Open the envelope, view the diploma, and discover the final gift message.
+
+NOTES
+Recommencer starts the game again.
+The letter can be edited; Voir le diplome officiel saves it on this browser/device only.
+The sound button currently changes its label but the game has no audio implemented.
+This folder is a local website. Sending a localhost address will not let someone else open it.
+To share offline, send this whole folder as a ZIP and have the recipient extract it first.
